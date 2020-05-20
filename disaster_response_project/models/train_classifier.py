@@ -16,7 +16,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.multioutput import MultiOutputClassifier
-from sklearn.feature_extraction.text import TfidfVectorizer, TfidfTransformer
+from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
 from sklearn.metrics import classification_report
 
 from sklearn.externals import joblib
@@ -81,7 +81,7 @@ def build_model():
     """    
 
     pipeline = Pipeline([
-        ('vect', TfidfVectorizer(tokenizer=tokenize, min_df=0.0001)),
+        ('vect', CountVectorizer(tokenizer=tokenize, min_df=0.0001)),
         ('tfidf', TfidfTransformer()),
         ('clf', MultiOutputClassifier(estimator=DecisionTreeClassifier(), n_jobs=-1)),
          ])
