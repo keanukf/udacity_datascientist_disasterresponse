@@ -6,56 +6,86 @@ import sys
 
 
 def load_data(messages_filepath, categories_filepath):
+    """
+    Loads two datasets and merges them
+
+    Args:
+      message_filepath (str): Disaster Tweets messages file path
+      categories_filepath (str): Disaster categories file path
+    Returns:
+      pandas.DataFrame: Merged pandas dataframe of both disaster messages and categories
+    """
+
     # load messages dataset
     messages = pd.read_csv(messages_filepath)
-    
+
     # load categories dataset
     categories = pd.read_csv(categories_filepath)
-    
+
     # create a dataframe of the 36 individual category columns
     categories_split = categories['categories'].str.split(';', expand = True)
-    
+
     # select the first row of the categories dataframe
     row = categories_split.iloc[0,:]
 
     # use this row to extract a list of new column names for categories.
-    # one way is to apply a lambda function that takes everything 
+    # one way is to apply a lambda function that takes everything
     # up to the second to last character of each string with slicing
     category_colnames = row.apply(lambda x: x[:-2])
 
     # rename the columns of `categories`
     categories_split.columns = category_colnames
-    
+
     for column in categories_split:
         # set each value to be the last character of the string
         categories_split[column] = categories_split[column].apply(lambda x: x[-1:])
 
         # convert column from string to numeric
         categories_split[column] = categories_split[column].astype('int')
-        
+
     # Put 'id' columns back to column_split to be able to merge with messages
     categories_split['id'] = categories['id']
 
     # merge datasets
     df = pd.merge(messages, categories_split, how='inner', left_on='id', right_on='id')
-    
+
     return df
 
 
 def clean_data(df):
+    """
+    Does data wrangling on merged dataset, returns cleaned dataframe
+
+    Args:
+      df (pandas.Dataframe): Uncleaned pandas dataframe after loading datasets
+    Returns:
+      pandas.Dataframe : Cleaned pandas dataframe object after wrangling
+    """
+
     # check number of duplicates
     value_counts = df['id'].value_counts()
     double_ids = value_counts[value_counts > 1].index
-    
+
     # drop duplicates
     df = df.drop_duplicates(subset=['id'])
-    
+
     return df
-    
-    
+
+
 def save_data(df, database_filename):
+    """
+    Saves cleaned data to Sqlite database
+
+    Args:
+      df (pandas.Dataframe): Cleaned pandas Dataframe for saving to databe
+      database_filename (str): Path to save SqliteDB object
+    Returns:
+      None
+    """
+
+    # create database connection
     engine = create_engine('sqlite:///'+database_filename)
-    df.to_sql('disaster_messages', engine, index=False)  
+    df.to_sql('disaster_messages', engine, index=False)
 
 
 def main():
@@ -70,12 +100,12 @@ def main():
 
         print('Cleaning data...')
         df = clean_data(df)
-        
+
         print('Saving data...\n    DATABASE: {}'.format(database_filepath))
         save_data(df, database_filepath)
-        
+
         print('Cleaned data saved to database!')
-    
+
     else:
         print('Please provide the filepaths of the messages and categories '\
               'datasets as the first and second argument respectively, as '\
