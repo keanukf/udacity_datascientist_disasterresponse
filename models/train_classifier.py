@@ -40,8 +40,8 @@ def load_data(database_filepath):
     engine = create_engine('sqlite:///'+database_filepath)
     df = pd.read_sql_table('disaster_messages', engine)
     X = df['message'].iloc[:100].values
-    Y = df.iloc[:100,4:].values
-    category_names = df.iloc[:100,4:].columns
+    Y = df.iloc[:,4:].values
+    category_names = df.iloc[:,4:].columns
 
     return X, Y, category_names
 
@@ -139,7 +139,7 @@ def save_model(model, model_filepath):
     Returns:
       None
     """
-    
+
     # save the model to disk
     joblib.dump(model, open('{}'.format(model_filepath), 'wb'))
 
