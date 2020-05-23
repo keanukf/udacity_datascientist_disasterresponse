@@ -39,21 +39,29 @@ model = joblib.load("../models/classifier.pkl")
 def index():
 
     # extract data needed for visuals
-    # TODO: Below is an example - modify to extract data for your own visuals
     genre_counts = df.groupby('genre').count()['message']
     genre_names = list(genre_counts.index)
 
+    avg_label_prob = pd.melt(df,
+                             id_vars=['id','message', 'original', 'genre'],
+                             var_name='label',
+                             value_name='count')\
+                             .groupby('label')['count']\
+                             .mean()\
+                             .sort_values(ascending=False)
+    label_names = list(avg_label_prob.index)
+
     # create visuals
-    # TODO: Below is an example - modify to create your own visuals
     graphs = [
         {
+            # set data for first chart
             'data': [
                 Bar(
                     x=genre_names,
                     y=genre_counts
                 )
             ],
-
+            # set layout for first chart
             'layout': {
                 'title': 'Distribution of Message Genres',
                 'yaxis': {
@@ -62,6 +70,26 @@ def index():
                 'xaxis': {
                     'title': "Genre"
                 }
+            }
+        },
+        {
+            # set data for second chart
+            'data': [
+                Bar(
+                    x=label_names,
+                    y=avg_label_prob
+                )
+            ],
+            # set layout for secon chart
+            'layout': {
+                'title': 'Probability of message (tweet) belonging to specific category',
+                'yaxis': {
+                    'title': "Probability"
+                },
+                'xaxis': {
+                    'title': "Label"
+                },
+                'color': 'black'
             }
         }
     ]
