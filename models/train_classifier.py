@@ -22,6 +22,7 @@ from sklearn.metrics import classification_report
 import joblib
 
 import sys
+import time
 
 
 def load_data(database_filepath):
@@ -39,9 +40,9 @@ def load_data(database_filepath):
     # load data from database
     engine = create_engine('sqlite:///'+database_filepath)
     df = pd.read_sql_table('disaster_messages', engine)
-    X = df['message'].iloc[:100].values
-    Y = df.iloc[:,4:].values
-    category_names = df.iloc[:,4:].columns
+    X = df['message'].iloc[:1000].values # only first 1000 rows selected, for performance reasons
+    Y = df.iloc[:1000,4:].values # only first 1000 rows selected, for performance reasons
+    category_names = df.iloc[:1000,4:].columns # only first 1000 rows selected, for performance reasons
 
     return X, Y, category_names
 
@@ -86,17 +87,17 @@ def build_model():
     pipeline = Pipeline([
         ('vect', CountVectorizer(tokenizer=tokenize, min_df=0.0001)),
         ('tfidf', TfidfTransformer()),
-        ('clf', MultiOutputClassifier(estimator=DecisionTreeClassifier(), n_jobs=-1)),
+        ('clf', MultiOutputClassifier(estimator=DecisionTreeClassifier())),
          ])
 
     # set parameters for hyperparameter tuning
     parameters = {
-        'vect__ngram_range': ((1, 1), (1, 2)),
-        'vect__max_df': (0.5, 0.75, 1.0),
-        'vect__max_features': (None, 5000, 10000),
-        'tfidf__use_idf': (True, False),
-        'clf__estimator__max_features': ['log2', None],
-        'clf__estimator__min_samples_split': [2, 3, 4]
+        #'vect__ngram_range': ((1, 1), (1, 2)),
+        #'vect__max_df': (0.5, 0.75, 1.0),
+        #'vect__max_features': (None, 5000, 10000)#,
+        #'tfidf__use_idf': (True, False),
+        #'clf__estimator__max_features': ['log2', None],
+        #'clf__estimator__min_samples_split': [2, 3, 4]
     }
 
     # tune hyperparamters using Gridsearch
@@ -150,12 +151,15 @@ def main():
         print('Loading data...\n    DATABASE: {}'.format(database_filepath))
         X, Y, category_names = load_data(database_filepath)
         X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=42)
+        print('Model data contains {} rows.'.format(len(X)))
 
         print('Building model...')
         model = build_model()
 
         print('Training model...')
+        time1 = time.time()
         model.fit(X_train, Y_train)
+        time2 = time.time()
 
         print('Evaluating model...')
         evaluate_model(model, X_test, Y_test, category_names)
@@ -163,7 +167,7 @@ def main():
         print('Saving model...\n    MODEL: {}'.format(model_filepath))
         save_model(model, model_filepath)
 
-        print('Trained model saved!')
+        print('Trained model saved! Training took {}s'.format(round(time2-time1, 2)))
 
     else:
         print('Please provide the filepath of the disaster messages database '\
