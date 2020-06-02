@@ -92,10 +92,10 @@ def build_model():
 
     # set parameters for hyperparameter tuning
     parameters = {
-        #'vect__ngram_range': ((1, 1), (1, 2)),
-        #'vect__max_df': (0.5, 0.75, 1.0),
-        #'vect__max_features': (None, 5000, 10000)#,
-        #'tfidf__use_idf': (True, False),
+        'vect__ngram_range': ((1, 1), (1, 2)),
+        'vect__max_df': (0.5, 1.0),
+        #'vect__max_features': (None, 5000, 10000),
+        'tfidf__use_idf': (True, False)#,
         #'clf__estimator__max_features': ['log2', None],
         #'clf__estimator__min_samples_split': [2, 3, 4]
     }
