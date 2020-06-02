@@ -19,7 +19,7 @@ from sklearn.multioutput import MultiOutputClassifier
 from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
 from sklearn.metrics import classification_report
 
-from sklearn.externals import joblib
+import joblib
 
 import sys
 
