@@ -1,6 +1,5 @@
 # Disaster Response Pipeline  - Udacity Project
-
-### Instructions for online build:
+In this Udacity Data Science course, I've learned and built on your data engineering skills. In this Machine Learning Pipeline project, I've applied these skills to analyze disaster data from Figure Eight to build a model for an API that classifies disaster messages.
 
 ### Instructions for local build:
 1. Run the following commands in the project's root directory to set up your database and model.
@@ -14,3 +13,6 @@
     `python run.py`
 
 3. Go to http://0.0.0.0:3001/
+
+### Instructions for message classification:
+Once the app is deployed, you can type in any message in the text field. After typing in a message, the trained model classifies your messages and shows every category your message was assigned to.
