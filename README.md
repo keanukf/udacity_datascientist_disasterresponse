@@ -14,6 +14,8 @@ In this Udacity Data Science course, I've learned and built on your data enginee
   * disaster_messages.csv - Datasource including disaster messages
   * DisasterResponse.db - Database
   * process_data.py - Data processing script
+* Images - Folder containing all images used
+  * preview.png - Preview image of project
 * models - Folder containing ML model
   * classifier.pkl - Pickle file with saved ML model
   * train_classifier.py - Script that trains ML model
