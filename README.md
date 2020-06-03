@@ -4,22 +4,22 @@ In this Udacity Data Science course, I've learned and built on your data enginee
 ![Project Preview](/images/preview.png)
 
 # Repository structure
-* app - Folder containing web app files
-  * templates - HTML web pages
-    * go.html - Page that shows ML categorization
-    * master.html - Main page
-  * run.py - Script to deploy web app locally
-* data - Folder containing data sources, database an processing script
-  * disaster_categories.csv - Datasource including disaster categories
-  * disaster_messages.csv - Datasource including disaster messages
-  * DisasterResponse.db - Database
-  * process_data.py - Data processing script
-* Images - Folder containing all images used
-  * preview.png - Preview image of project
-* models - Folder containing ML model
-  * classifier.pkl - Pickle file with saved ML model
-  * train_classifier.py - Script that trains ML model
-* reqiurements.txt - Textfile containing all required python packages
+* "app" - Folder containing web app files
+  * "templates" - HTML web pages
+    * "go.html" - Page that shows ML categorization
+    * "master.html" - Main page
+  * "run.py" - Script to deploy web app locally
+* "data" - Folder containing data sources, database an processing script
+  * "disaster_categories.csv" - Datasource including disaster categories
+  * "disaster_messages.csv" - Datasource including disaster messages
+  * "DisasterResponse.db" - Database
+  * "process_data.py" - Data processing script
+* "Images" - Folder containing all images used
+  * "preview.png" - Preview image of project
+* "models" - Folder containing ML model
+  * "classifier.pkl" - Pickle file with saved ML model
+  * "train_classifier.py" - Script that trains ML model
+* "reqiurements.txt" - Textfile containing all required python packages
 
 # Web App Usage
 ### Instructions for local build:
