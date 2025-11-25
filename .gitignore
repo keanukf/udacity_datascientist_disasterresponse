@@ -1,0 +1,29 @@
+# Byte-compiled / cache artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+
+# Jupyter notebooks
+.ipynb_checkpoints/
+
+# IDE / editor settings
+.vscode/
+.idea/
+
+# macOS metadata
+.DS_Store
+
+# Logs and temporary files
+*.log
+*.tmp
+

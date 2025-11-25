@@ -8,7 +8,15 @@ import plotly.graph_objects as graph_objs
 from flask import Flask, render_template, request
 from sqlalchemy import create_engine
 
-from app.tokenizer import tokenize  # noqa: F401
+try:
+    from app.tokenizer import tokenize  # type: ignore  # noqa: F401
+except ModuleNotFoundError:  # pragma: no cover - local script execution
+    import sys
+    CURRENT_DIR = Path(__file__).resolve().parent
+    PARENT_DIR = CURRENT_DIR.parent
+    if str(PARENT_DIR) not in sys.path:
+        sys.path.insert(0, str(PARENT_DIR))
+    from tokenizer import tokenize  # type: ignore  # noqa: F401
 
 
 BASE_DIR = Path(__file__).resolve().parents[1]
