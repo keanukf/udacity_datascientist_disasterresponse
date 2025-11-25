@@ -2,6 +2,8 @@
 
 This project operationalizes a full-stack machine learning pipeline for multilingual crisis communication. Building on the Figure Eight (Appen) dataset of real disaster messages, the work demonstrates end-to-end research practice: hypothesis-driven data preparation, explainable feature engineering, rigorous model benchmarking, and deployment through a lightweight Flask service suitable for rapid humanitarian response scenarios.
 
+> **Provenance:** Originally completed as part of the Udacity Data Scientist Nanodegree (2020). I periodically refresh dependencies and documentation to keep the repository runnable, but it intentionally preserves the historical design choices and does not represent latest techniques and methods.
+
 > **Runtime note:** Target Python 3.13. Create a 3.13.x environment before installing dependencies for consistent behavior with the hosted application.
 
 ![Project Preview](/images/preview.png)
