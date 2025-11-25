@@ -1,8 +1,9 @@
 # import libraries
-import pandas as pd
-import numpy as np
-from sqlalchemy import create_engine
 import sys
+from pathlib import Path
+
+import pandas as pd
+from sqlalchemy import create_engine
 
 
 def load_data(messages_filepath, categories_filepath):
@@ -16,38 +17,26 @@ def load_data(messages_filepath, categories_filepath):
       pandas.DataFrame: Merged pandas dataframe of both disaster messages and categories
     """
 
-    # load messages dataset
     messages = pd.read_csv(messages_filepath)
-
-    # load categories dataset
     categories = pd.read_csv(categories_filepath)
 
     # create a dataframe of the 36 individual category columns
-    categories_split = categories['categories'].str.split(';', expand = True)
-
-    # select the first row of the categories dataframe
-    row = categories_split.iloc[0,:]
-
-    # use this row to extract a list of new column names for categories.
-    # one way is to apply a lambda function that takes everything
-    # up to the second to last character of each string with slicing
-    category_colnames = row.apply(lambda x: x[:-2])
-
-    # rename the columns of `categories`
+    categories_split = categories["categories"].str.split(";", expand=True)
+    first_row = categories_split.iloc[0, :]
+    category_colnames = first_row.apply(lambda value: value.split("-")[0])
     categories_split.columns = category_colnames
 
     for column in categories_split:
-        # set each value to be the last character of the string
-        categories_split[column] = categories_split[column].apply(lambda x: x[-1:])
+        categories_split[column] = (
+            categories_split[column]
+            .str.split("-")
+            .str[-1]
+            .astype(int)
+            .clip(0, 1)
+        )
 
-        # convert column from string to numeric
-        categories_split[column] = categories_split[column].astype('int')
-
-    # Put 'id' columns back to column_split to be able to merge with messages
-    categories_split['id'] = categories['id']
-
-    # merge datasets
-    df = pd.merge(messages, categories_split, how='inner', left_on='id', right_on='id')
+    categories_split.insert(0, "id", categories["id"])
+    df = messages.merge(categories_split, how="inner", on="id")
 
     return df
 
@@ -62,12 +51,15 @@ def clean_data(df):
       pandas.Dataframe : Cleaned pandas dataframe object after wrangling
     """
 
-    # check number of duplicates
-    value_counts = df['id'].value_counts()
-    double_ids = value_counts[value_counts > 1].index
-
-    # drop duplicates
-    df = df.drop_duplicates(subset=['id'])
+    df = df.drop_duplicates(subset=["id"]).copy()
+    category_columns = df.columns[4:]
+    df.loc[:, category_columns] = (
+        df[category_columns]
+        .apply(pd.to_numeric, errors="coerce")
+        .fillna(0)
+        .astype(int)
+        .clip(0, 1)
+    )
 
     return df
 
@@ -83,9 +75,10 @@ def save_data(df, database_filename):
       None
     """
 
-    # create database connection
-    engine = create_engine('sqlite:///'+database_filename)
-    df.to_sql('disaster_messages', engine, index=False, if_exists='replace')
+    database_path = Path(database_filename).resolve()
+    database_path.parent.mkdir(parents=True, exist_ok=True)
+    engine = create_engine(f"sqlite:///{database_path}", future=True)
+    df.to_sql("disaster_messages", engine, index=False, if_exists="replace")
 
 
 def main():
