@@ -1,28 +1,28 @@
 # import libraries
-import nltk
-nltk.download(['punkt', 'wordnet'])
-
-import pandas as pd
-import numpy as np
-import re
-from nltk.tokenize import word_tokenize
-from nltk.stem import WordNetLemmatizer
-import sqlalchemy
-from sqlalchemy import create_engine
-
-from sklearn.pipeline import Pipeline
-from sklearn.model_selection import GridSearchCV
-from sklearn.model_selection import train_test_split
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.multioutput import MultiOutputClassifier
-from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
-from sklearn.metrics import classification_report
-
-import joblib
-
 import sys
 import time
+from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+import joblib
+import nltk
+import pandas as pd
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
+from sklearn.metrics import classification_report
+from sklearn.model_selection import GridSearchCV, train_test_split
+from sklearn.multioutput import MultiOutputClassifier
+from sklearn.pipeline import Pipeline
+from sqlalchemy import create_engine
+
+from app.tokenizer import tokenize
+
+
+NLTK_PACKAGES = ["punkt", "wordnet"]
+TRAINING_ROW_LIMIT = 1000
 
 
 def load_data(database_filepath):
@@ -37,41 +37,24 @@ def load_data(database_filepath):
       category_names (list): label names for response categories
     """
 
-    # load data from database
-    engine = create_engine('sqlite:///'+database_filepath)
-    df = pd.read_sql_table('disaster_messages', engine)
-    X = df['message'].iloc[:1000].values # only first 1000 rows selected, for performance reasons
-    Y = df.iloc[:1000,4:].values # only first 1000 rows selected, for performance reasons
-    category_names = df.iloc[:1000,4:].columns # only first 1000 rows selected, for performance reasons
+    engine = create_engine(f"sqlite:///{database_filepath}", future=True)
+    with engine.connect() as connection:
+        df = pd.read_sql_table("disaster_messages", connection)
+
+    if TRAINING_ROW_LIMIT:
+        df = df.head(TRAINING_ROW_LIMIT)
+
+    X = df["message"]
+    Y = (
+        df.iloc[:, 4:]
+        .apply(pd.to_numeric, errors="coerce")
+        .fillna(0)
+        .astype(int)
+        .clip(0, 1)
+    )
+    category_names = Y.columns.tolist()
 
     return X, Y, category_names
-
-
-def tokenize(text):
-    """
-    Tokenizes and Lemmatizes a given text
-
-    Args:
-      text (str): Text to tokenize
-    Returns:
-      list: List of text tokens
-    """
-
-    # remove punctiation
-    text = re.sub(r'[^a-zA-Z0-9]', " ", text)
-
-    # tokenize given text
-    tokens = word_tokenize(text)
-    # instantiate lemmatizer
-    lemmatizer = WordNetLemmatizer()
-
-    # lemmatize each token
-    clean_tokens = []
-    for tok in tokens:
-        clean_tok = lemmatizer.lemmatize(tok).lower().strip()
-        clean_tokens.append(clean_tok)
-
-    return clean_tokens
 
 
 def build_model():
@@ -83,25 +66,34 @@ def build_model():
                                             using GridSearchCV and DecisionTreeClassifier
     """
 
-    # build pipeline model
-    pipeline = Pipeline([
-        ('vect', CountVectorizer(tokenizer=tokenize, min_df=0.0001)),
-        ('tfidf', TfidfTransformer()),
-        ('clf', MultiOutputClassifier(estimator=DecisionTreeClassifier())),
-         ])
+    pipeline = Pipeline(
+        steps=[
+            (
+                "vect",
+                CountVectorizer(
+                    tokenizer=tokenize,
+                    token_pattern=None,
+                    min_df=2,
+                    max_df=0.9,
+                ),
+            ),
+            ("tfidf", TfidfTransformer()),
+            (
+                "clf",
+                MultiOutputClassifier(
+                    estimator=RandomForestClassifier(n_estimators=50, n_jobs=-1)
+                ),
+            ),
+        ]
+    )
 
-    # set parameters for hyperparameter tuning
     parameters = {
-        'vect__ngram_range': ((1, 1), (1, 2)),
-        'vect__max_df': (0.5, 1.0),
-        #'vect__max_features': (None, 5000, 10000),
-        'tfidf__use_idf': (True, False)#,
-        #'clf__estimator__max_features': ['log2', None],
-        #'clf__estimator__min_samples_split': [2, 3, 4]
+        "vect__ngram_range": ((1, 1), (1, 2)),
+        "tfidf__use_idf": (True, False),
+        "clf__estimator__max_depth": [None, 20],
     }
 
-    # tune hyperparamters using Gridsearch
-    cv = GridSearchCV(pipeline, param_grid=parameters)
+    cv = GridSearchCV(pipeline, param_grid=parameters, n_jobs=-1, verbose=2)
 
     return cv
 
@@ -125,9 +117,15 @@ def evaluate_model(model, X_test, Y_test, category_names):
     Y_pred = model.predict(X_test)
 
     # performance report for each prediction of category
-    for i in range(len(Y_pred[0,:])):
-        print(category_names[i] + ":")
-        print(classification_report(Y_test[:,i],Y_pred[:,i]))
+    for idx, label in enumerate(category_names):
+        print(f"{label}:")
+        print(
+            classification_report(
+                Y_test.iloc[:, idx],
+                Y_pred[:, idx],
+                zero_division=0,
+            )
+        )
 
 
 def save_model(model, model_filepath):
@@ -141,17 +139,23 @@ def save_model(model, model_filepath):
       None
     """
 
-    # save the model to disk
-    joblib.dump(model, open('{}'.format(model_filepath), 'wb'))
+    joblib.dump(model, model_filepath)
 
 
 def main():
     if len(sys.argv) == 3:
         database_filepath, model_filepath = sys.argv[1:]
-        print('Loading data...\n    DATABASE: {}'.format(database_filepath))
-        X, Y, category_names = load_data(database_filepath)
+        database_path = Path(database_filepath).resolve()
+        model_path = Path(model_filepath).resolve()
+
+        print('Loading data...\n    DATABASE: {}'.format(database_path))
+        X, Y, category_names = load_data(database_path)
         X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=42)
         print('Model data contains {} rows.'.format(len(X)))
+
+        print('Ensuring required NLTK assets are available...')
+        for package in NLTK_PACKAGES:
+            nltk.download(package, quiet=True)
 
         print('Building model...')
         model = build_model()
@@ -164,8 +168,9 @@ def main():
         print('Evaluating model...')
         evaluate_model(model, X_test, Y_test, category_names)
 
-        print('Saving model...\n    MODEL: {}'.format(model_filepath))
-        save_model(model, model_filepath)
+        model_path.parent.mkdir(parents=True, exist_ok=True)
+        print('Saving model...\n    MODEL: {}'.format(model_path))
+        save_model(model, model_path)
 
         print('Trained model saved! Training took {}s'.format(round(time2-time1, 2)))
 

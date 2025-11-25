@@ -1,36 +1,29 @@
 import json
-import plotly
-import pandas as pd
+from pathlib import Path
 
-from nltk.stem import WordNetLemmatizer
-from nltk.tokenize import word_tokenize
-
-from flask import Flask
-from flask import render_template, request, jsonify
-from plotly.graph_objs import Bar
 import joblib
+import pandas as pd
+import plotly
+import plotly.graph_objects as graph_objs
+from flask import Flask, render_template, request
 from sqlalchemy import create_engine
 
+from app.tokenizer import tokenize  # noqa: F401
+
+
+BASE_DIR = Path(__file__).resolve().parents[1]
+DATABASE_PATH = BASE_DIR / "data" / "DisasterResponse.db"
+MODEL_PATH = BASE_DIR / "models" / "classifier.pkl"
 
 app = Flask(__name__)
 
-def tokenize(text):
-    tokens = word_tokenize(text)
-    lemmatizer = WordNetLemmatizer()
-
-    clean_tokens = []
-    for tok in tokens:
-        clean_tok = lemmatizer.lemmatize(tok).lower().strip()
-        clean_tokens.append(clean_tok)
-
-    return clean_tokens
-
 # load data
-engine = create_engine('sqlite:///../data/DisasterResponse.db')
-df = pd.read_sql_table('disaster_messages', engine)
+engine = create_engine(f"sqlite:///{DATABASE_PATH}", future=True)
+with engine.connect() as connection:
+    df = pd.read_sql_table("disaster_messages", connection)
 
 # load model
-model = joblib.load("../models/classifier.pkl")
+model = joblib.load(MODEL_PATH)
 
 
 # index webpage displays cool visuals and receives user input text for model
@@ -56,7 +49,7 @@ def index():
         {
             # set data for first chart
             'data': [
-                Bar(
+                graph_objs.Bar(
                     x=genre_names,
                     y=genre_counts
                 )
@@ -75,7 +68,7 @@ def index():
         {
             # set data for second chart
             'data': [
-                Bar(
+                graph_objs.Bar(
                     x=label_names,
                     y=avg_label_prob
                 )
